@@ -26,3 +26,10 @@ def make_features(df, cols, new_cols):
     """
 
     pass
+
+def list_to_lowercase(_list):
+    """Takes in a list of strings and returns the list where each item is now lowercase:
+    :param: _list : list which you would like to change
+    """
+    _list = list(map(lambda x: x.lower(), _list))
+    return _list
