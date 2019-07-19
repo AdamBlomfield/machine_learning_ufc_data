@@ -1,8 +1,20 @@
-# ml_ufc_data
+# Machine Learning using UFC data
 ==============================
 
 Using Machine Learning to analyze mixed martial arts fights in the UFC
 ==============================
+
+In this project, we use machine learning to accurately predict the outcome of a mixed martial arts fight in the UFC.  The data is first cleaned, then a baseline model is produced and finally a neural network is used to try to achieve the highest accuracy possible for predicting the outcome of a fight.  The slide deck describing the results can also be found in this repository
+
+
+## Background
+### Mixed Martial Arts
+Throughout history numerous martial art forms have been developed, from boxing and muay thai to wrestling and jiu jitsu.  Mixed Martial Arts (MMA) is a sport which pits the best fighters of each discipline against one another.  It is a simple structure of one versus one, man vs man or woman vs woman. 
+The Ultimate Fighting Championship (UFC) is the largest MMA promotion company in the world, and features the highest ranked fighters.  
+### Project
+Machine Learning is being used more and more throughout the sporting world, offering new insights into strategies for overcoming oppositions.  In this project I have decided to analyse the sport of MMA, using data from fights in the UFC.  By using a neural network, my goal is to predict the outcome of fights to the highest accuracy possible.  
+Further work is then done to place bets on several fights, when my algorithm predicts a fight to a certain threshold of accuracy.
+
 
 Project Organization
 ------------
