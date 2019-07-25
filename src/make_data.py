@@ -33,3 +33,10 @@ def list_to_lowercase(_list):
     """
     _list = list(map(lambda x: x.lower(), _list))
     return _list
+
+def parse_height(height):
+    '''Splits the height value into feet and inches'''
+    ht_ = height.split(" ")
+    ft_ = float(ht_[0])
+    in_ = float(ht_[1])
+    return (12*ft_) + in_
