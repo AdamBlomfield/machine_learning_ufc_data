@@ -6,6 +6,8 @@
 ## fit the standard categories of data cleaning, feature engineering,
 ## modeling, or visualization.
 # For Dataframes and arrays
+
+
 import numpy as np
 import pandas as pd
 # Visualization libraries
@@ -51,8 +53,16 @@ import itertools
 np.random.seed(123)
 tf.set_random_seed(123)
 
+import datetime
+import pickle
+import random
+
 models_summary = pd.DataFrame()
 models_summary.rename_axis('Model', axis='columns', inplace=True)
+
+data = pd.read_csv('../data/processed/combined')
+fighters = pd.read_csv('../data/processed/fighters_cleaned')
+bouts = pd.read_csv('../data/processed/bouts_cleaned')
 
 
 def test_custom():
@@ -121,7 +131,7 @@ def training_and_validation_accuracy(acc, val_acc, history_mod,
     ax.set_xlabel('Number of Epochs')
     ax.set_ylabel('Accuracy')
     ax.set_ylim(bottom=y_lim[0], top=y_lim[1])
-    ax.legend()
+    ax.legend(loc=4)
     sns.despine()
     
     # Calculate the change in Accuracy
@@ -153,7 +163,7 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
+    plt.xticks(tick_marks, classes)
     plt.yticks(tick_marks, classes)
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
@@ -517,7 +527,7 @@ def model_xgboost(X_train, y_train, X_test, y_test):
                             min_child_weight=10,
                             n_estimators=150,
                             subsample=0.7,
-                            random_state=148,
+                            random_state=185,
                             n_jobs=-1)
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
@@ -527,6 +537,10 @@ def model_xgboost(X_train, y_train, X_test, y_test):
     
     # For ensemble method
     xgb_pred_proba = clf.predict_proba(X_test)
+    
+    # Save Model
+    filename = '../models/xgboost_model.pkl'
+    pickle.dump(clf, open(filename, 'wb'))
     
     return (xgb_accuracy,xgb_pred_proba, y_test, y_pred, clf)     
     
@@ -613,15 +627,7 @@ def plot_compare_models(data, column):
     
 # Cleaning functions
 
-def calc_age_at_fight(data, new_col_name, fighter_dob, date='date'):
-    '''Calculate the age of a fighter at the time of the fight, based on their date of birth'''
-    # Calculate the time difference between 2 dates (in days)
-    data[new_col_name] = data['date'] - data[fighter_dob]
-    # Remove the 'days' value in column
-    data[new_col_name] /= np.timedelta64(1, 'D')
-    # Convert form days to years
-    data[new_col_name] //= 365
-    
+
 def plot_sns_distplot(df, column, x_label):
     '''Plot the Distribution plot of a column'''
     
@@ -649,7 +655,7 @@ def plot_sns_distplot(df, column, x_label):
     # Save Figure
     save_figure(ax, title)
 
-def plot_sns_displot_ages(list_, x_label):
+def plot_sns_displot_ages(list_, x_label, plot_mean=False, plot_median=False):
     # Set figure
     sns.set(rc={'figure.figsize':(12,6)},style="white", context="talk")
 
@@ -657,18 +663,23 @@ def plot_sns_displot_ages(list_, x_label):
     min_ = int(np.min(list_))
     max_ = int(np.max(list_))
     range_ = (max_ - min_)
-    
     print("Fighters' Ages Range from {} to {}".format(min_, max_))
+    
+    mean = np.mean(list_)
+    print('Mean Age: {}'.format(round(mean,2)))
+    median = np.median(list_)
+    print('Median Age: {}'.format(round(median,2)))
+    
     # Plot
     ax = sns.distplot(list_, bins=range_, color='forestgreen', kde=False);
     
     # Mean vertical line
-    mean = np.mean(list_)
-    plt.axvline(x=mean, ls= "--", lw=3, color='darkgreen', label='Mean Age: {}'.format(round(mean, 1)))
+    if plot_mean:
+        plt.axvline(x=mean, ls= "--", lw=3, color='darkgreen', label='Mean Age: {}'.format(round(mean, 1)))
     
     # Median vertical line
-    median = np.median(list_)
-    plt.axvline(x=median, ls= ":", lw=3, color='black', label='Median Age: {}'.format(round(median, 1)))
+    if plot_median:
+        plt.axvline(x=median, ls= "--", lw=3, color='darkgreen', label='Median Age: {}'.format(round(median, 1)))
     
     # Title and Axis
     title = '{}'.format(x_label)
@@ -680,6 +691,8 @@ def plot_sns_displot_ages(list_, x_label):
     
     # Save Figure
     save_figure(ax, title) 
+    
+    
     
     return {'mean': mean, 'median': median}
     
@@ -701,3 +714,239 @@ def column_countplot(dataframe, column, show_count=False):
     if show_count:
         for p in ax.patches:
             ax.annotate('{:}'.format(p.get_height()), (p.get_x()+0.3, p.get_height()+10))
+
+def calc_age_at_fight(data, new_col_name, fighter_dob, date='date'):
+    '''Calculate the age of a fighter at the time of the fight, based on their date of birth'''
+    # Calculate the time difference between 2 dates (in days)
+    data[new_col_name] = data['date'] - data[fighter_dob]
+    # Remove the 'days' value in column
+    data[new_col_name] /= np.timedelta64(1, 'D')
+    # Convert form days to years
+    data[new_col_name] //= 365            
+            
+def calc_average_age(data_fighters, data_bouts, drop_na=True):
+    '''Calculate the average age of fighters based on their dobs and dates of fights'''
+    
+    # Create DataFrame with fighter name and fighter dob
+    fighters_dobs = data_fighters[['name', 'dob']]
+    
+    # Create 2nd DataFrame with bout date and bout's 2 fighters' names
+    bouts_dates = pd.DataFrame(data_bouts,
+                               columns=['date',
+                                        'fighter1',
+                                        'fighter2'])
+    
+    # Merge 2 DataFrames to add Fighter 1 dob
+    bouts_dates_dobs = bouts_dates.merge(fighters_dobs,
+                                         left_on='fighter1',
+                                         right_on='name')
+    bouts_dates_dobs['fighter1_dob'] = bouts_dates_dobs['dob']
+    bouts_dates_dobs.drop(['name', 'dob'], axis=1, inplace=True)
+    
+    # Merge 2 DataFrames to add Fighter 2 dob
+    bouts_dates_dobs = bouts_dates_dobs.merge(fighters_dobs,
+                                         left_on='fighter2',
+                                         right_on='name')
+    bouts_dates_dobs['fighter2_dob'] = bouts_dates_dobs['dob']
+    bouts_dates_dobs.drop(['name', 'dob'], axis=1, inplace=True)
+    
+    # Calculate Fighters' ages at fight
+    calc_age_at_fight(bouts_dates_dobs, 'fighter1_age', 'fighter1_dob')
+    calc_age_at_fight(bouts_dates_dobs, 'fighter2_age', 'fighter2_dob')
+    
+    # Drop NaN Values
+    if drop_na:
+        bouts_dates_dobs.dropna(subset=['fighter1_age', 'fighter2_age'],
+                                inplace=True )
+    
+    return bouts_dates_dobs
+
+def ask_fighter_names():
+    '''Ask the user for the name of each fighter'''
+    fighter1_name = input('What is the name of Fighter 1?\t')
+    fighter2_name = input('What is the name of Fighter 2?\t')
+    return {'f1_name': fighter1_name, 'f2_name': fighter2_name}
+
+def ask_title_fight():
+    '''Ask the user whether the fight isa title fight'''
+    title_fight_q = input('Is this a title fight? (yes/no)\t')
+    if title_fight_q=='yes':
+        title_fight = 1
+    elif title_fight_q=='no':
+        title_fight = 0
+    return title_fight
+
+def ask_date_of_fight():
+    '''Ask the user when the fight takes place'''
+    fight_date = input('When will the fight take place? (YYYY-MM-DD) (default = today)\t')
+    if fight_date:
+        datetime.strptime(fight_date, '%Y-%m-%d')
+    else: 
+        fight_date = datetime.date.today()
+    
+    return fight_date
+
+def assemble_fighter_stats(fighter_name, fighters):
+    '''Gathers the statistics for the fighter, based off of their name'''
+    
+    fighter_stats = fighters[fighters['name']==fighter_name].loc[:,'win':'sub_avg'].values
+    
+    return fighter_stats
+
+def fighter_dob(name, fighter_df):
+    '''returns the fighter date of birth from a fighter dataframe'''
+    
+    return fighter_df[fighter_df['name']==name]['dob']
+
+def col_to_datetime(col, data):
+    '''convert a column to datetime format'''
+    
+    return pd.to_datetime(data[col], format='%Y-%m-%d', errors='coerce')
+
+def input_age_at_fight(prediction_stats, names):
+    '''Takes in a fighters date of birth, calculates their age vs a date and drops unwanted columns'''
+    
+    # Fighter dobs
+    prediction_df['fighter1_dob'] = fighter_dob(names['f1_name'], prediction_df)
+    prediction_df['fighter2_dob'] = fighter_dob(names['f2_name'], prediction_df)
+
+    # Convert dates to datetime format
+    date_cols = ['date', 'fighter1_dob', 'fighter2_dob']
+    for col in date_cols:
+        prediction_df[col] = col_to_datetime(col, prediction_df)
+
+    # Calculate and input age at fight
+    calc_age_at_fight(prediction_df, 'fighter1_age_at_fight', 'fighter1_dob')
+    calc_age_at_fight(prediction_df, 'fighter2_age_at_fight', 'fighter2_dob')
+
+    # Drop unwanted columns
+    cols_to_drop = ['date', 'fighter1_dob', 'fighter2_dob']
+    prediction_df.drop(labels=cols_to_drop, axis=1, inplace=True)
+
+    return prediction_stats
+ 
+def create_blank_test_df(data, unwanted_columns={'winner_is_fighter1'} ):    
+    '''Creates a blank dataframe which copies the columns from an input dataframe'''
+    # Copy the columns from data table
+    prediction_cols = list(data.columns)
+    # Remove unwanted columns
+    prediction_cols = [e for e in prediction_cols if e not in unwanted_columns]
+    # Create Blank Dataframe from columns
+    prediction_df = pd.DataFrame(columns=prediction_cols)
+
+    return prediction_df
+
+def replace_list_to_1st_value(X_predict):
+    '''Replace a list by its first value'''
+    f_cols = list(X_predict.loc[:,'fighter1_win':'fighter2_sub_avg'].columns)
+    for col in f_cols:
+        X_predict[col][0] = X_predict[col][0][0]
+        
+def build_X_predict_df(data, fighters, names, fight_date, title_fight):
+    '''Creates a dataframe for the predictions.  This can be input into a prediction model to get y_predict'''
+    data = pd.read_csv('../data/processed/combined')
+    
+    # Create Blank Data Frame
+    X_predict = create_blank_test_df(data)
+     
+    # Add names to X_predict
+    X_predict['fighter1'] = pd.Series(names['f1_name'])
+    X_predict['fighter2'] = pd.Series(names['f2_name'])
+    
+    # Add date to X_predict
+    X_predict['date'] = pd.Series(fight_date)
+    
+    # Add title_fight to X_predict
+    X_predict['title_fight'] = pd.Series(title_fight)
+
+    # Add in Fighter 1 and Fighter 2 Stats
+        # Gather stats
+    f1_stats = assemble_fighter_stats(names['f1_name'], fighters)
+    f2_stats = assemble_fighter_stats(names['f2_name'], fighters)
+        # Add stats to X_predict
+    X_predict.loc[0,'fighter1_win':'fighter1_sub_avg'] = f1_stats
+    X_predict.loc[0,'fighter2_win':'fighter2_sub_avg'] = f2_stats
+        # Replace values by first item in list
+    f_cols = list(X_predict.loc[:,'fighter1_win':'fighter2_sub_avg'].columns)
+    for col in f_cols:
+        X_predict[col][0] = X_predict[col][0][0]
+    
+    # Add in Ages for Fighter 1 and 2 
+        # Add Fighters' dobs
+    fighters_dobs = fighters[['name', 'dob']]
+    fighters_dobs.set_index('name', inplace=True)
+    f1_dob = fighters_dobs.loc[X_predict['fighter1'][0]].values
+    X_predict['fighter1_dob'] = f1_dob
+    f2_dob = fighters_dobs.loc[X_predict['fighter2'][0]].values
+    X_predict['fighter2_dob'] = f2_dob
+        # Change to datetime
+    date_cols = ['date', 'fighter1_dob', 'fighter2_dob']
+    for col in date_cols:
+        X_predict[col] = pd.to_datetime(X_predict[col], format='%Y-%m-%d', errors='coerce')
+        # Calculate Fighters' Ages
+    calc_age_at_fight(X_predict, 'fighter1_age', 'fighter1_dob')
+    calc_age_at_fight(X_predict, 'fighter2_age', 'fighter2_dob')
+
+    # Drop unwanted columns
+    unwanted_cols = ['date', 'fighter1', 'fighter2', 'fighter1_dob', 'fighter2_dob', 'fighter1_dob', 'fighter2_dob']
+    X_predict.drop(unwanted_cols, axis=1, inplace=True)
+    
+    # Change dtype to float64
+    X_predict = X_predict.astype('float64')
+       
+    return X_predict
+
+def predict_fight(data, fighters):
+    '''Predict the outcome of a fighter between 2 named fighters'''
+    data = pd.read_csv('../data/processed/combined')
+    
+    # Ask the user for the fighters' names
+    names = ask_fighter_names()    
+    
+    # Ask the user for the date of the fight (default = today's date)
+    fight_date = ask_date_of_fight()
+    
+    # Ask the user whether this is a title fight (default = not a title fight)
+    title_fight = ask_title_fight()
+    
+    # Create new X_predict dataframe
+    X_predict = build_X_predict_df(data, fighters, names, fight_date, title_fight)
+    
+    # Import XGBoost Model
+    filename = '../models/xgboost_model.pkl'
+    model_xgboost = pickle.load(open(filename, 'rb'))
+    
+    # Print results
+    prediction = model_xgboost.predict(X_predict)
+    prediction_proba = np.max(model_xgboost.predict_proba(X_predict))
+    if prediction:
+        print('\nI think that {} will beat {}.\nI am {}% sure of this'.format(names['f1_name'], names['f2_name'], round(prediction_proba*100,2)))
+    else:
+        print('\nI think that {} will beat {}.\nI am {}% sure of this'.format(names['f2_name'], names['f1_name'], round(prediction_proba*100,2)))
+
+def fighter_name_contains(string_):
+    '''Returns the fighters who have a name that contains the given string'''
+    names_df = pd.DataFrame(fighters['name'][fighters['name'].str.contains(string_)])
+    
+    if len(names_df):
+        print('Names that contain "{}"'.format(string_))
+        return names_df
+    else:
+        print('There are no fighters that contain "{}" in their name'.format(string_))
+    
+def random_fighter_names(fighters, num_fighters=10):
+    '''Show a list of random fighter names'''
+    
+    # Blank list of fighter names
+    fighter_names = []
+    
+    # Choose random indices
+    for n in range(num_fighters):
+        random_index = random.randint(0,len(fighters))
+        fighter_names.append(fighters['name'][random_index])
+
+    # Output a DataFrame
+    fighter_names_df = pd.DataFrame(fighter_names, columns=['{} Random Fighter Names'.format(num_fighters)])
+    
+    return fighter_names_df 
+    
