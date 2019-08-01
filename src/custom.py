@@ -621,9 +621,13 @@ def plot_compare_models(data, column):
     plt.axvline(x=min(values), ls= "--", lw=3, color='firebrick', label='Baseline Model Accuracy')
     
     # Title and Axis
-    ax.set_title('Accuracy of Machine Learning Models', pad=20)
+    title = 'Accuracy of Machine Learning Models'
+    ax.set_title(title, pad=20)
     ax.set_xlim(left=0, right=1)
     sns.despine()
+    
+    # Save Figure
+    save_figure(ax, title)
     
 # Cleaning functions
 
@@ -671,20 +675,21 @@ def plot_sns_displot_ages(list_, x_label, plot_mean=False, plot_median=False):
     print('Median Age: {}'.format(round(median,2)))
     
     # Plot
-    ax = sns.distplot(list_, bins=range_, color='forestgreen', kde=False);
+    ax = sns.distplot(list_, bins=range_, color='royalblue', kde=False);
     
     # Mean vertical line
     if plot_mean:
-        plt.axvline(x=mean, ls= "--", lw=3, color='darkgreen', label='Mean Age: {}'.format(round(mean, 1)))
+        plt.axvline(x=mean, ls= "--", lw=3, color='indianred', label='Mean Age: {}'.format(round(mean, 1)))
     
     # Median vertical line
     if plot_median:
-        plt.axvline(x=median, ls= "--", lw=3, color='darkgreen', label='Median Age: {}'.format(round(median, 1)))
+        plt.axvline(x=median, ls= "--", lw=3, color='indianred', label='Median Age: {}'.format(round(median, 1)))
     
     # Title and Axis
     title = '{}'.format(x_label)
-    ax.set_title(title, pad=25)
-    ax.set_xlabel(x_label)
+    ax.set_title(title, pad=25, weight='bold')
+    ax.set_xlabel(x_label, weight='bold')
+#     ax.set_xticklabels(labels=range(20,40),weight='bold')
     ax.set_yticklabels('')
     sns.despine(left=True)
     ax.legend()
@@ -780,7 +785,7 @@ def ask_date_of_fight():
     '''Ask the user when the fight takes place'''
     fight_date = input('When will the fight take place? (YYYY-MM-DD) (default = today)\t')
     if fight_date:
-        datetime.strptime(fight_date, '%Y-%m-%d')
+        datetime.datetime.strptime(fight_date, '%Y-%m-%d')
     else: 
         fight_date = datetime.date.today()
     
