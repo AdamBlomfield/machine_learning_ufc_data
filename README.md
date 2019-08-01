@@ -12,9 +12,14 @@ In this project, we use machine learning to accurately predict the outcome of a 
 Throughout history numerous martial art forms have been developed, from boxing and muay thai to wrestling and jiu jitsu.  Mixed Martial Arts (MMA) is a sport which pits the best fighters of each discipline against one another.  It is a simple structure of one versus one, man vs man or woman vs woman. 
 The Ultimate Fighting Championship (UFC) is the largest MMA promotion company in the world, and features the highest ranked fighters.  
 ### Project
-Machine Learning is being used more and more throughout the sporting world, offering new insights into strategies for overcoming oppositions.  In this project I have decided to analyse the sport of MMA, using data from fights in the UFC.  By using a neural network, my goal is to predict the outcome of fights to the highest accuracy possible.  
+Machine Learning is being used more and more throughout the sporting world, offering new insights into strategies for overcoming oppositions.  In this project I have decided to analyse the sport of MMA, using data from fights in the UFC.  By using several classification machine learning models including 2 neural networks, my goal is to predict the outcome of fights to the highest accuracy possible.  
 Further work is then done to place bets on several fights, when my algorithm predicts a fight to a certain threshold of accuracy.
 
+## Project Outcome
+eXtreme Gradient Boosting (XG Boost) outperformed all of the other models, with an accuracy of 73.7%
+![Model Comparison](../reports/figures/accuracy_of_machine_learning_models.png)
+
+The model was improved with 
 
 Project Organization
 ------------
