@@ -17,7 +17,7 @@ Further work is then done to place bets on several fights, when my algorithm pre
 
 ## Project Outcome
 eXtreme Gradient Boosting (XG Boost) outperformed all of the other models, with an accuracy of 73.7%
-![Model Comparison](../reports/figures/accuracy_of_machine_learning_models.png)
+![Model Comparison](/reports/figures/accuracy_of_machine_learning_models.png)
 
 The model was improved with 
 
